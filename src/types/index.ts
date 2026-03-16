@@ -7,6 +7,24 @@ export interface Game {
   created_at: string
 }
 
+export interface Quiz {
+  id: string
+  name: string
+  created_at: string
+}
+
+export interface QuizQuestion {
+  id: string
+  quiz_id: string
+  question_text: string
+  option_a: string
+  option_b: string
+  option_c: string
+  option_d: string
+  correct_option: 'A' | 'B' | 'C' | 'D'
+  order_index: number
+}
+
 export interface Question {
   id: string
   game_id: string

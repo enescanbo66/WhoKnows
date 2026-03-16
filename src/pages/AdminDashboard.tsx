@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import type { Question, OptionKey } from '../types'
+import type { Question, OptionKey, Quiz, QuizQuestion } from '../types'
 import { OPTION_SHAPES, SHAPE_LABELS } from '../types'
 
 function generateJoinCode() {
@@ -35,12 +35,28 @@ export default function AdminDashboard() {
   const [draft, setDraft] = useState<QuestionDraft>({ ...emptyDraft })
   const [loading, setLoading] = useState(false)
   const [editIndex, setEditIndex] = useState<number | null>(null)
+  const [quizzes, setQuizzes] = useState<Quiz[]>([])
+  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null)
+  const [quizName, setQuizName] = useState('')
+  const [savingQuiz, setSavingQuiz] = useState(false)
 
   useEffect(() => {
     if (sessionStorage.getItem('quizbattle_admin') !== 'true') {
       navigate('/admin', { replace: true })
     }
   }, [navigate])
+
+  // Load saved quizzes list
+  useEffect(() => {
+    const loadQuizzes = async () => {
+      const { data } = await supabase
+        .from('quizzes')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (data) setQuizzes(data as Quiz[])
+    }
+    loadQuizzes()
+  }, [])
 
   const addQuestion = () => {
     if (!draft.question_text.trim() || !draft.option_a.trim()) return
@@ -102,6 +118,108 @@ export default function AdminDashboard() {
     }
   }
 
+  const resetBuilder = () => {
+    setQuestions([])
+    setDraft({ ...emptyDraft })
+    setEditIndex(null)
+  }
+
+  const loadQuiz = async (quiz: Quiz) => {
+    setSelectedQuizId(quiz.id)
+    setQuizName(quiz.name)
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('quiz_questions')
+        .select('*')
+        .eq('quiz_id', quiz.id)
+        .order('order_index')
+
+      if (error) throw error
+
+      const drafts: QuestionDraft[] =
+        (data as QuizQuestion[] | null)?.map((qq) => ({
+          question_text: qq.question_text,
+          option_a: qq.option_a,
+          option_b: qq.option_b,
+          option_c: qq.option_c,
+          option_d: qq.option_d,
+          correct_option: qq.correct_option,
+        })) ?? []
+
+      setQuestions(drafts)
+      setDraft({ ...emptyDraft })
+      setEditIndex(null)
+    } catch (err) {
+      console.error(err)
+      alert('Failed to load quiz.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startNewQuiz = () => {
+    setSelectedQuizId(null)
+    setQuizName('')
+    resetBuilder()
+  }
+
+  const saveQuiz = async () => {
+    if (!quizName.trim() || questions.length === 0) return
+    setSavingQuiz(true)
+    try {
+      let quizId = selectedQuizId
+
+      if (!quizId) {
+        const { data, error } = await supabase
+          .from('quizzes')
+          .insert({ name: quizName.trim() })
+          .select()
+          .single()
+        if (error || !data) throw error || new Error('Failed to create quiz')
+        quizId = data.id as string
+        setSelectedQuizId(quizId)
+        setQuizzes((prev) => [data as Quiz, ...prev])
+      } else {
+        const { error } = await supabase
+          .from('quizzes')
+          .update({ name: quizName.trim() })
+          .eq('id', quizId)
+        if (error) throw error
+        setQuizzes((prev) =>
+          prev.map((q) => (q.id === quizId ? { ...q, name: quizName.trim() } : q)),
+        )
+
+        const { error: delErr } = await supabase
+          .from('quiz_questions')
+          .delete()
+          .eq('quiz_id', quizId)
+        if (delErr) throw delErr
+      }
+
+      const rows = questions.map((q, i) => ({
+        quiz_id: quizId,
+        question_text: q.question_text,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        correct_option: q.correct_option,
+        order_index: i,
+      }))
+
+      const { error: insErr } = await supabase.from('quiz_questions').insert(rows)
+      if (insErr) throw insErr
+
+      alert('Quiz saved.')
+    } catch (err) {
+      console.error(err)
+      alert('Failed to save quiz.')
+    } finally {
+      setSavingQuiz(false)
+    }
+  }
+
   const allFilled =
     draft.question_text.trim() &&
     draft.option_a.trim() &&
@@ -112,12 +230,74 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen p-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-black">Create a Game</h1>
+        <div>
+          <h1 className="text-3xl font-black">Create a Game</h1>
+          <p className="text-white/40 text-sm">
+            Build questions once, save as a quiz, and reuse later.
+          </p>
+        </div>
         <button
-          onClick={() => { sessionStorage.removeItem('quizbattle_admin'); navigate('/') }}
+          onClick={() => {
+            sessionStorage.removeItem('quizbattle_admin')
+            navigate('/')
+          }}
           className="text-white/40 hover:text-white/70 text-sm transition"
         >
           Logout
+        </button>
+      </div>
+
+      {/* Saved quizzes sidebar */}
+      {quizzes.length > 0 && (
+        <div className="mb-6 bg-white/5 rounded-2xl p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-sm uppercase tracking-wide text-white/60">
+              Saved quizzes
+            </h2>
+            <button
+              onClick={startNewQuiz}
+              className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition"
+            >
+              New quiz
+            </button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {quizzes.map((quiz) => (
+              <button
+                key={quiz.id}
+                onClick={() => loadQuiz(quiz)}
+                className={`px-3 py-1.5 rounded-xl text-sm whitespace-nowrap border ${
+                  selectedQuizId === quiz.id
+                    ? 'bg-brand-accent border-transparent'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                {quiz.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quiz name + save */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+        <div className="flex-1">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-white/50 mb-1">
+            Quiz name
+          </label>
+          <input
+            placeholder="e.g. General Knowledge, JS Basics..."
+            value={quizName}
+            onChange={(e) => setQuizName(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent text-sm"
+          />
+        </div>
+        <button
+          onClick={saveQuiz}
+          disabled={!quizName.trim() || questions.length === 0 || savingQuiz}
+          className="sm:w-40 px-4 py-2.5 rounded-xl bg-white/10 border border-brand-accent/60 text-sm font-semibold hover:bg-brand-accent/40 disabled:opacity-40 disabled:cursor-not-allowed transition"
+        >
+          {savingQuiz ? 'Saving...' : 'Save quiz'}
         </button>
       </div>
 

@@ -26,6 +26,25 @@ CREATE TABLE questions (
   order_index INTEGER NOT NULL
 );
 
+-- Saved quizzes (templates)
+CREATE TABLE quizzes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE quiz_questions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  quiz_id UUID REFERENCES quizzes(id) ON DELETE CASCADE NOT NULL,
+  question_text TEXT NOT NULL,
+  option_a TEXT NOT NULL,
+  option_b TEXT NOT NULL,
+  option_c TEXT NOT NULL,
+  option_d TEXT NOT NULL,
+  correct_option TEXT NOT NULL CHECK (correct_option IN ('A', 'B', 'C', 'D')),
+  order_index INTEGER NOT NULL
+);
+
 -- Players table
 CREATE TABLE players (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -128,6 +147,8 @@ ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public read/write games" ON games
   FOR ALL USING (true) WITH CHECK (true);
@@ -139,6 +160,10 @@ CREATE POLICY "Public read/write players" ON players
   FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Public read/write answers" ON answers
+  FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public read/write quizzes" ON quizzes
+  FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public read/write quiz_questions" ON quiz_questions
   FOR ALL USING (true) WITH CHECK (true);
 
 -- ================================================

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin'
@@ -8,6 +8,13 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
+  // If already logged in, redirect to dashboard after first render
+  useEffect(() => {
+    if (sessionStorage.getItem('quizbattle_admin') === 'true') {
+      navigate('/admin/dashboard', { replace: true })
+    }
+  }, [navigate])
+
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem('quizbattle_admin', 'true')
@@ -15,11 +22,6 @@ export default function AdminLogin() {
     } else {
       setError('Incorrect password')
     }
-  }
-
-  if (sessionStorage.getItem('quizbattle_admin') === 'true') {
-    navigate('/admin/dashboard', { replace: true })
-    return null
   }
 
   return (
