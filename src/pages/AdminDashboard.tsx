@@ -63,12 +63,7 @@ export default function AdminDashboard() {
 
   const addQuestion = () => {
     if (!draft.question_text.trim() || !draft.option_a.trim()) return
-    if (editIndex !== null) {
-      setQuestions((prev) => prev.map((q, i) => (i === editIndex ? { ...draft } : q)))
-      setEditIndex(null)
-    } else {
-      setQuestions((prev) => [...prev, { ...draft }])
-    }
+    setQuestions((prev) => [...prev, { ...draft }])
     setDraft({ ...emptyDraft })
   }
 
@@ -95,7 +90,7 @@ export default function AdminDashboard() {
   }
 
   const startEdit = (i: number) => {
-    setDraft({ ...questions[i] })
+      setDraft({ ...questions[i] })
     setEditIndex(i)
   }
 
@@ -321,67 +316,149 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* Added questions */}
+      {/* Added questions + inline editor */}
       {questions.length > 0 && (
         <div className="mb-8 space-y-2">
           <h2 className="font-bold text-lg mb-3">
             Questions ({questions.length})
           </h2>
           {questions.map((q, i) => (
-            <div
-              key={i}
-              className={`bg-white/10 rounded-xl p-4 flex items-center justify-between gap-3 ${
-                dragIndex === i ? 'ring-2 ring-brand-accent/70 bg-white/15' : ''
-              }`}
-              draggable
-              onDragStart={() => setDragIndex(i)}
-              onDragOver={(e) => {
-                e.preventDefault()
-                e.dataTransfer.dropEffect = 'move'
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                if (dragIndex === null) return
-                moveQuestion(dragIndex, i)
-                setDragIndex(null)
-              }}
-              onDragEnd={() => setDragIndex(null)}
-            >
-              <div className="flex-1 min-w-0">
-                <span className="text-white/40 font-mono mr-2">{i + 1}.</span>
-                <span className="font-medium truncate">{q.question_text}</span>
-                <span className="ml-2 text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">
-                  Answer: {SHAPE_LABELS[OPTION_SHAPES[q.correct_option]]}
-                </span>
-                {q.image_url?.trim() && (
-                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-white/10 text-white/60">
-                    Image
+            <div key={i} className="space-y-2">
+              <div
+                className={`bg-white/10 rounded-xl p-4 flex items-center justify-between gap-3 ${
+                  dragIndex === i ? 'ring-2 ring-brand-accent/70 bg-white/15' : ''
+                }`}
+                draggable
+                onDragStart={() => setDragIndex(i)}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (dragIndex === null) return
+                  moveQuestion(dragIndex, i)
+                  setDragIndex(null)
+                }}
+                onDragEnd={() => setDragIndex(null)}
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="text-white/40 font-mono mr-2">{i + 1}.</span>
+                  <span className="font-medium truncate">{q.question_text}</span>
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">
+                    Answer: {SHAPE_LABELS[OPTION_SHAPES[q.correct_option]]}
                   </span>
-                )}
+                  {q.image_url?.trim() && (
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded bg-white/10 text-white/60">
+                      Image
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => startEdit(i)}
+                    className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => removeQuestion(i)}
+                    className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-sm hover:bg-red-500/30 transition"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => startEdit(i)}
-                  className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => removeQuestion(i)}
-                  className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-sm hover:bg-red-500/30 transition"
-                >
-                  Delete
-                </button>
-              </div>
+
+              {editIndex === i && (
+                <div className="bg-white/5 border border-brand-accent/40 rounded-2xl p-4 space-y-4">
+                  <h3 className="font-semibold text-sm text-white/70">
+                    Editing question {i + 1}
+                  </h3>
+                  <input
+                    placeholder="Question text"
+                    value={draft.question_text}
+                    onChange={(e) => setDraft({ ...draft, question_text: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                  />
+                  <input
+                    placeholder="Image URL (optional)"
+                    value={draft.image_url || ''}
+                    onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(['A', 'B', 'C', 'D'] as OptionKey[]).map((key) => {
+                      const field = `option_${key.toLowerCase()}` as keyof QuestionDraft
+                      const shape = OPTION_SHAPES[key]
+                      const label = SHAPE_LABELS[shape]
+                      return (
+                        <div key={key} className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 font-semibold text-xs uppercase tracking-wide">
+                            {label}
+                          </span>
+                          <input
+                            placeholder={`${label} option`}
+                            value={draft[field] as string}
+                            onChange={(e) =>
+                              setDraft({ ...draft, [field]: e.target.value } as QuestionDraft)
+                            }
+                            className="w-full pl-24 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-white/60 text-sm font-medium">Correct answer:</label>
+                    <select
+                      value={draft.correct_option}
+                      onChange={(e) =>
+                        setDraft({ ...draft, correct_option: e.target.value as OptionKey })
+                      }
+                      className="px-3 py-2 rounded-lg bg-black/40 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                    >
+                      <option value="A">A — Square</option>
+                      <option value="B">B — Triangle</option>
+                      <option value="C">C — Circle</option>
+                      <option value="D">D — Hexagon</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => {
+                        setEditIndex(null)
+                        setDraft({ ...emptyDraft })
+                      }}
+                      className="px-4 py-2 rounded-xl bg-white/5 text-sm hover:bg-white/10 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={addQuestion}
+                      disabled={
+                        !draft.question_text.trim() ||
+                        !draft.option_a.trim() ||
+                        !draft.option_b.trim() ||
+                        !draft.option_c.trim() ||
+                        !draft.option_d.trim()
+                      }
+                      className="px-4 py-2 rounded-xl bg-brand-accent text-sm font-semibold hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      Save changes
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Question form */}
+      {/* New question form */}
       <div className="bg-white/10 backdrop-blur rounded-2xl p-6 space-y-4 mb-6">
         <h2 className="font-bold text-lg">
-          {editIndex !== null ? `Edit Question ${editIndex + 1}` : 'Add a Question'}
+          Add a Question
         </h2>
         <input
           placeholder="Question text"
