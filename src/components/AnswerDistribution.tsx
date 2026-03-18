@@ -4,48 +4,61 @@ import { OPTION_SHAPES, SHAPE_COLORS, SHAPE_LABELS } from '../types'
 interface AnswerDistributionProps {
   counts: Record<OptionKey, number>
   totalAnswers: number
+  correctOption: OptionKey
 }
 
 export default function AnswerDistribution({
   counts,
   totalAnswers,
+  correctOption,
 }: AnswerDistributionProps) {
   const options: OptionKey[] = ['A', 'B', 'C', 'D']
   const max = Math.max(1, ...options.map((k) => counts[k] || 0))
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <h3 className="text-xl font-black text-center mb-4 text-shadow-lg">
+    <div className="w-full max-w-3xl mx-auto">
+      <h3 className="text-xl font-black text-center mb-2 text-shadow-lg">
         Answer distribution
       </h3>
-      <div className="space-y-3">
+      <div className="flex items-end justify-between gap-4 bg-white/5 rounded-2xl px-4 pt-4 pb-2">
         {options.map((k) => {
           const shape = OPTION_SHAPES[k]
           const label = SHAPE_LABELS[shape]
           const color = SHAPE_COLORS[shape]
           const count = counts[k] || 0
           const pct = totalAnswers > 0 ? (count / totalAnswers) * 100 : 0
-          const width = (count / max) * 100
+          const height = (count / max) * 100
+          const isCorrect = k === correctOption
 
           return (
-            <div key={k} className="bg-white/10 rounded-xl p-3 overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="w-3.5 h-3.5 rounded-sm"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="font-bold">{label}</span>
-                </div>
-                <div className="text-white/70 text-sm tabular-nums">
-                  {count} ({pct.toFixed(0)}%)
-                </div>
-              </div>
-              <div className="h-3 bg-black/30 rounded-full overflow-hidden">
+            <div key={k} className="flex flex-col items-center flex-1 min-w-0">
+              <div className="relative w-full h-40 bg-black/20 rounded-t-xl overflow-hidden flex items-end">
                 <div
-                  className="h-full rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${width}%`, backgroundColor: color }}
+                  className={`w-full transition-all duration-500 ease-out rounded-t-xl ${
+                    isCorrect ? 'ring-2 ring-yellow-300 shadow-[0_0_15px_rgba(250,250,150,0.7)]' : ''
+                  }`}
+                  style={{ height: `${height || 4}%`, backgroundColor: color }}
                 />
+                {isCorrect && (
+                  <span className="absolute top-1 left-1 right-1 text-[10px] text-center text-yellow-300 font-semibold uppercase tracking-wide">
+                    Correct
+                  </span>
+                )}
+                {count > 0 && (
+                  <span className="absolute bottom-1 left-0 right-0 text-xs font-bold text-center drop-shadow">
+                    {count}
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xs text-white/70 tabular-nums">
+                {pct.toFixed(0)}%
+              </div>
+              <div className="mt-1 flex items-center gap-1 text-xs font-semibold">
+                <span
+                  className="w-3.5 h-3.5 rounded-sm"
+                  style={{ backgroundColor: color }}
+                />
+                <span>{label}</span>
               </div>
             </div>
           )

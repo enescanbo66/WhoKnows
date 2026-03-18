@@ -258,13 +258,14 @@ export default function AdminGame() {
             </p>
           </div>
         )}
-        <Scoreboard players={players} />
         {distribution && (
           <AnswerDistribution
             counts={distribution}
             totalAnswers={Object.values(distribution).reduce((a, b) => a + b, 0)}
+            correctOption={currentQuestion?.correct_option ?? 'A'}
           />
         )}
+        <Scoreboard players={players} />
         <button
           onClick={() => {
             if (isLastQuestion) {
