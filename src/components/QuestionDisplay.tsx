@@ -88,6 +88,21 @@ export default function QuestionDisplay({
       <h1 className="text-3xl sm:text-4xl font-black text-center mb-8 text-shadow-lg leading-tight">
         {question.question_text}
       </h1>
+      {question.image_url && (
+        <div className="mb-6 flex justify-center">
+          <div className="w-full max-w-3xl bg-white/10 rounded-2xl p-3">
+            <img
+              src={question.image_url}
+              alt="Question"
+              className="w-full max-h-[320px] object-contain rounded-xl"
+              loading="lazy"
+              onError={(e) => {
+                ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+              }}
+            />
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {shuffledOptions.map((opt) => (
           <OptionCard

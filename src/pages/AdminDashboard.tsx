@@ -13,6 +13,7 @@ function generateJoinCode() {
 
 interface QuestionDraft {
   question_text: string
+  image_url?: string
   option_a: string
   option_b: string
   option_c: string
@@ -22,6 +23,7 @@ interface QuestionDraft {
 
 const emptyDraft: QuestionDraft = {
   question_text: '',
+  image_url: '',
   option_a: '',
   option_b: '',
   option_c: '',
@@ -77,6 +79,18 @@ export default function AdminDashboard() {
     }
   }
 
+  const moveQuestion = (from: number, to: number) => {
+    if (to < 0 || to >= questions.length) return
+    setQuestions((prev) => {
+      const copy = [...prev]
+      const [item] = copy.splice(from, 1)
+      copy.splice(to, 0, item)
+      return copy
+    })
+    if (editIndex === from) setEditIndex(to)
+    else if (editIndex === to) setEditIndex(from)
+  }
+
   const startEdit = (i: number) => {
     setDraft({ ...questions[i] })
     setEditIndex(i)
@@ -98,6 +112,7 @@ export default function AdminDashboard() {
       const questionRows = questions.map((q, i) => ({
         game_id: game.id,
         question_text: q.question_text,
+        image_url: q.image_url?.trim() || null,
         option_a: q.option_a,
         option_b: q.option_b,
         option_c: q.option_c,
@@ -140,6 +155,7 @@ export default function AdminDashboard() {
       const drafts: QuestionDraft[] =
         (data as QuizQuestion[] | null)?.map((qq) => ({
           question_text: qq.question_text,
+          image_url: (qq as any).image_url || '',
           option_a: qq.option_a,
           option_b: qq.option_b,
           option_c: qq.option_c,
@@ -200,6 +216,7 @@ export default function AdminDashboard() {
       const rows = questions.map((q, i) => ({
         quiz_id: quizId,
         question_text: q.question_text,
+        image_url: q.image_url?.trim() || null,
         option_a: q.option_a,
         option_b: q.option_b,
         option_c: q.option_c,
@@ -318,8 +335,27 @@ export default function AdminDashboard() {
                 <span className="ml-2 text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">
                   Answer: {SHAPE_LABELS[OPTION_SHAPES[q.correct_option]]}
                 </span>
+                {q.image_url?.trim() && (
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-white/10 text-white/60">
+                    Image
+                  </span>
+                )}
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => moveQuestion(i, i - 1)}
+                  disabled={i === 0}
+                  className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Up
+                </button>
+                <button
+                  onClick={() => moveQuestion(i, i + 1)}
+                  disabled={i === questions.length - 1}
+                  className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Down
+                </button>
                 <button
                   onClick={() => startEdit(i)}
                   className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition"
@@ -347,6 +383,12 @@ export default function AdminDashboard() {
           placeholder="Question text"
           value={draft.question_text}
           onChange={(e) => setDraft({ ...draft, question_text: e.target.value })}
+          className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+        />
+        <input
+          placeholder="Image URL (optional)"
+          value={draft.image_url || ''}
+          onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
           className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-accent"
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

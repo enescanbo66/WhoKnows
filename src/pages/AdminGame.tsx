@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import type { Game, Question, Player } from '../types'
+import type { Game, Question, Player, OptionKey } from '../types'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 import QuestionDisplay from '../components/QuestionDisplay'
 import Scoreboard from '../components/Scoreboard'
 import Timer from '../components/Timer'
+import AnswerDistribution from '../components/AnswerDistribution'
 
 export default function AdminGame() {
   const { gameId } = useParams<{ gameId: string }>()
@@ -16,6 +17,7 @@ export default function AdminGame() {
   const [players, setPlayers] = useState<Player[]>([])
   const [answerCount, setAnswerCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [distribution, setDistribution] = useState<Record<OptionKey, number> | null>(null)
 
   // Fetch initial data
   useEffect(() => {
@@ -107,6 +109,38 @@ export default function AdminGame() {
       .order('total_score', { ascending: false })
     if (data) setPlayers(data)
   }, [gameId])
+
+  const loadDistribution = useCallback(async (questionId: string) => {
+    const { data, error } = await supabase
+      .from('answers')
+      .select('selected_option')
+      .eq('question_id', questionId)
+    if (error) {
+      console.error(error)
+      setDistribution(null)
+      return
+    }
+    const counts: Record<OptionKey, number> = { A: 0, B: 0, C: 0, D: 0 }
+    for (const row of (data as { selected_option: OptionKey }[]) || []) {
+      counts[row.selected_option] = (counts[row.selected_option] || 0) + 1
+    }
+    setDistribution(counts)
+  }, [])
+
+  // Reset distribution when a new question starts
+  useEffect(() => {
+    if (!game) return
+    if (game.phase !== 'question') return
+    setDistribution(null)
+  }, [game?.phase, game?.current_question_index])
+
+  // Load distribution when entering scores phase
+  useEffect(() => {
+    if (!game) return
+    if (game.phase !== 'scores') return
+    if (!currentQuestion) return
+    loadDistribution(currentQuestion.id)
+  }, [game?.phase, currentQuestion?.id, loadDistribution])
 
   const finishGame = useCallback(async () => {
     if (!gameId) return
@@ -223,6 +257,12 @@ export default function AdminGame() {
           </div>
         )}
         <Scoreboard players={players} />
+        {distribution && (
+          <AnswerDistribution
+            counts={distribution}
+            totalAnswers={Object.values(distribution).reduce((a, b) => a + b, 0)}
+          />
+        )}
         <button
           onClick={() => {
             if (isLastQuestion) {

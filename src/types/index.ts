@@ -17,6 +17,7 @@ export interface QuizQuestion {
   id: string
   quiz_id: string
   question_text: string
+  image_url?: string | null
   option_a: string
   option_b: string
   option_c: string
@@ -29,6 +30,7 @@ export interface Question {
   id: string
   game_id: string
   question_text: string
+  image_url?: string | null
   option_a: string
   option_b: string
   option_c: string
