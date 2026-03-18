@@ -41,6 +41,7 @@ export default function AdminDashboard() {
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null)
   const [quizName, setQuizName] = useState('')
   const [savingQuiz, setSavingQuiz] = useState(false)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (sessionStorage.getItem('quizbattle_admin') !== 'true') {
@@ -80,6 +81,8 @@ export default function AdminDashboard() {
   }
 
   const moveQuestion = (from: number, to: number) => {
+    if (from === to) return
+    if (from < 0 || from >= questions.length) return
     if (to < 0 || to >= questions.length) return
     setQuestions((prev) => {
       const copy = [...prev]
@@ -327,7 +330,22 @@ export default function AdminDashboard() {
           {questions.map((q, i) => (
             <div
               key={i}
-              className="bg-white/10 rounded-xl p-4 flex items-center justify-between gap-3"
+              className={`bg-white/10 rounded-xl p-4 flex items-center justify-between gap-3 ${
+                dragIndex === i ? 'ring-2 ring-brand-accent/70 bg-white/15' : ''
+              }`}
+              draggable
+              onDragStart={() => setDragIndex(i)}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'move'
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                if (dragIndex === null) return
+                moveQuestion(dragIndex, i)
+                setDragIndex(null)
+              }}
+              onDragEnd={() => setDragIndex(null)}
             >
               <div className="flex-1 min-w-0">
                 <span className="text-white/40 font-mono mr-2">{i + 1}.</span>
@@ -342,20 +360,6 @@ export default function AdminDashboard() {
                 )}
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={() => moveQuestion(i, i - 1)}
-                  disabled={i === 0}
-                  className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Up
-                </button>
-                <button
-                  onClick={() => moveQuestion(i, i + 1)}
-                  disabled={i === questions.length - 1}
-                  className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Down
-                </button>
                 <button
                   onClick={() => startEdit(i)}
                   className="px-3 py-1 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition"
