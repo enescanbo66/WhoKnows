@@ -484,10 +484,19 @@ export default function AdminDashboard() {
       )}
 
       {/* New question form */}
-      <div className="bg-white/10 backdrop-blur rounded-2xl p-6 space-y-4 mb-6">
+      <div
+        className={`bg-white/10 backdrop-blur rounded-2xl p-6 space-y-4 mb-6 ${
+          editIndex !== null ? 'opacity-60' : ''
+        }`}
+      >
         <h2 className="font-bold text-lg">
           Add a Question
         </h2>
+        {editIndex !== null && (
+          <p className="text-white/50 text-xs">
+            Finish editing the selected question first.
+          </p>
+        )}
         <input
           placeholder="Question text"
           value={draft.question_text}
@@ -535,10 +544,10 @@ export default function AdminDashboard() {
         </div>
         <button
           onClick={addQuestion}
-          disabled={!allFilled}
+          disabled={editIndex !== null || !allFilled}
           className="w-full py-3 rounded-xl bg-brand-accent font-bold hover:bg-purple-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {editIndex !== null ? 'Save Changes' : 'Add Question'}
+          Add Question
         </button>
       </div>
 
