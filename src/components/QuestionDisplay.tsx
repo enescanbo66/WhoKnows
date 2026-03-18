@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { type Question, type OptionKey, OPTION_SHAPES, SHAPE_COLORS, SHAPE_LABELS } from '../types'
 
 interface QuestionDisplayProps {
@@ -69,17 +68,6 @@ export default function QuestionDisplay({
     { key: 'D', text: question.option_d },
   ]
 
-  // Shuffle options so their positions are random each question.
-  // useMemo ensures stable order while the same question is shown.
-  const shuffledOptions = useMemo(() => {
-    const copy = [...options]
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[copy[i], copy[j]] = [copy[j], copy[i]]
-    }
-    return copy
-  }, [question.id])
-
   return (
     <div className="w-full max-w-4xl mx-auto">
       <p className="text-center text-white/60 font-semibold mb-2">
@@ -104,7 +92,7 @@ export default function QuestionDisplay({
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {shuffledOptions.map((opt) => (
+        {options.map((opt) => (
           <OptionCard
             key={opt.key}
             optionKey={opt.key}
