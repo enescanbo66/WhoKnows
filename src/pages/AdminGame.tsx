@@ -104,8 +104,25 @@ export default function AdminGame() {
 
   const showScores = useCallback(async () => {
     if (!gameId) return
-    await supabase.from('games').update({ phase: 'scores' }).eq('id', gameId)
+    await supabase
+      .from('games')
+      .update({ phase: 'scores', scores_revealed: false })
+      .eq('id', gameId)
     // Refresh player scores
+    const { data } = await supabase
+      .from('players')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('total_score', { ascending: false })
+    if (data) setPlayers(data)
+  }, [gameId])
+
+  const revealScoreboard = useCallback(async () => {
+    if (!gameId) return
+    await supabase
+      .from('games')
+      .update({ scores_revealed: true })
+      .eq('id', gameId)
     const { data } = await supabase
       .from('players')
       .select('*')
@@ -248,6 +265,7 @@ export default function AdminGame() {
 
   // --- SCORES ---
   if (game.phase === 'scores') {
+    const revealed = game.scores_revealed === true
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-8">
         {currentQuestion && (
@@ -265,19 +283,30 @@ export default function AdminGame() {
             correctOption={currentQuestion?.correct_option ?? 'A'}
           />
         )}
-        <Scoreboard players={players} />
-        <button
-          onClick={() => {
-            if (isLastQuestion) {
-              finishGame()
-            } else {
-              startQuestion(game.current_question_index + 1)
-            }
-          }}
-          className="px-12 py-4 rounded-2xl bg-gradient-to-r from-brand-accent to-purple-600 font-black text-xl hover:brightness-110 transition"
-        >
-          {isLastQuestion ? 'Show Final Results' : 'Next Question'}
-        </button>
+        {!revealed ? (
+          <button
+            onClick={revealScoreboard}
+            className="px-10 py-4 rounded-2xl bg-gradient-to-r from-brand-accent to-purple-600 font-black text-xl hover:brightness-110 transition"
+          >
+            Reveal scoreboard
+          </button>
+        ) : (
+          <>
+            <Scoreboard players={players} />
+            <button
+              onClick={() => {
+                if (isLastQuestion) {
+                  finishGame()
+                } else {
+                  startQuestion(game.current_question_index + 1)
+                }
+              }}
+              className="px-12 py-4 rounded-2xl bg-gradient-to-r from-brand-accent to-purple-600 font-black text-xl hover:brightness-110 transition"
+            >
+              {isLastQuestion ? 'Show Final Results' : 'Next Question'}
+            </button>
+          </>
+        )}
       </div>
     )
   }

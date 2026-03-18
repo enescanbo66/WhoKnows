@@ -10,6 +10,7 @@ CREATE TABLE games (
   phase TEXT DEFAULT 'setup' CHECK (phase IN ('setup', 'lobby', 'question', 'scores', 'finished')),
   current_question_index INTEGER DEFAULT 0,
   question_started_at TIMESTAMPTZ,
+  scores_revealed BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

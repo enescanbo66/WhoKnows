@@ -4,6 +4,7 @@ export interface Game {
   phase: 'setup' | 'lobby' | 'question' | 'scores' | 'finished'
   current_question_index: number
   question_started_at: string | null
+  scores_revealed?: boolean | null
   created_at: string
 }
 

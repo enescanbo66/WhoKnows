@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Game, Question, Player, OptionKey } from '../types'
 import ShapeButton from '../components/ShapeButton'
-import Scoreboard from '../components/Scoreboard'
+import FocusedScoreboard from '../components/FocusedScoreboard'
 import Timer from '../components/Timer'
 
 interface PlayerSession {
@@ -84,9 +84,10 @@ export default function PlayerGame() {
     return () => { supabase.removeChannel(channel) }
   }, [game?.id])
 
-  // Refresh players on score phase
+  // Refresh players only when scoreboard is revealed (or game finished)
   useEffect(() => {
     if (!game || (game.phase !== 'scores' && game.phase !== 'finished')) return
+    if (game.phase === 'scores' && game.scores_revealed !== true) return
     const refresh = async () => {
       const { data } = await supabase
         .from('players')
@@ -96,7 +97,7 @@ export default function PlayerGame() {
       if (data) setPlayers(data)
     }
     refresh()
-  }, [game?.phase, game?.id])
+  }, [game?.phase, game?.id, game?.scores_revealed])
 
   const submitAnswer = useCallback(async (option: OptionKey) => {
     if (!game || !session || !questions.length || submitting || selectedOption) return
@@ -200,6 +201,7 @@ export default function PlayerGame() {
 
   // --- SCORES ---
   if (game.phase === 'scores') {
+    const revealed = game.scores_revealed === true
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-6">
         {answerResult && (
@@ -211,13 +213,24 @@ export default function PlayerGame() {
             </p>
           </div>
         )}
-        <Scoreboard
-          players={players}
-          highlightPlayerId={session.playerId}
-        />
-        <p className="text-white/40 text-sm animate-pulse">
-          Waiting for next question...
-        </p>
+        {!revealed ? (
+          <div className="text-center space-y-2">
+            <p className="text-white/60 font-semibold">Answers are in…</p>
+            <p className="text-white/40 text-sm animate-pulse">
+              Waiting for the host to reveal the scoreboard...
+            </p>
+          </div>
+        ) : (
+          <>
+            <FocusedScoreboard
+              players={players}
+              myPlayerId={session.playerId}
+            />
+            <p className="text-white/40 text-sm animate-pulse">
+              Waiting for next question...
+            </p>
+          </>
+        )}
       </div>
     )
   }
@@ -239,9 +252,9 @@ export default function PlayerGame() {
             <p className="text-white/60 text-sm">Rank #{rank}</p>
           </div>
         )}
-        <Scoreboard
+        <FocusedScoreboard
           players={players}
-          highlightPlayerId={session.playerId}
+          myPlayerId={session.playerId}
           title="Final Standings"
         />
         <button

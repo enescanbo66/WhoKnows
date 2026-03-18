@@ -40,8 +40,8 @@ export default function AnswerDistribution({
                   style={{ height: `${height || 4}%`, backgroundColor: color }}
                 />
                 {isCorrect && (
-                  <span className="absolute top-1 left-1 right-1 text-[10px] text-center text-yellow-300 font-semibold uppercase tracking-wide">
-                    Correct
+                  <span className="absolute top-1 left-1 right-1 text-center text-yellow-300 font-black text-sm drop-shadow">
+                    ✓
                   </span>
                 )}
                 {count > 0 && (
