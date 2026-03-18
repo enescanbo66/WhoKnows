@@ -328,20 +328,33 @@ export default function AdminDashboard() {
                 className={`bg-white/10 rounded-xl p-4 flex items-center justify-between gap-3 ${
                   dragIndex === i ? 'ring-2 ring-brand-accent/70 bg-white/15' : ''
                 }`}
-                draggable
-                onDragStart={() => setDragIndex(i)}
                 onDragOver={(e) => {
                   e.preventDefault()
                   e.dataTransfer.dropEffect = 'move'
                 }}
                 onDrop={(e) => {
                   e.preventDefault()
-                  if (dragIndex === null) return
-                  moveQuestion(dragIndex, i)
+                  const fallback = Number(e.dataTransfer.getData('text/plain'))
+                  const from = dragIndex ?? (Number.isFinite(fallback) ? fallback : null)
+                  if (from === null) return
+                  moveQuestion(from, i)
                   setDragIndex(null)
                 }}
-                onDragEnd={() => setDragIndex(null)}
               >
+                <div
+                  className="w-10 flex items-center justify-center cursor-grab active:cursor-grabbing select-none text-white/60 font-bold"
+                  draggable
+                  onDragStart={(e) => {
+                    setDragIndex(i)
+                    e.dataTransfer.effectAllowed = 'move'
+                    e.dataTransfer.setData('text/plain', String(i))
+                  }}
+                  onDragEnd={() => setDragIndex(null)}
+                  aria-label={`Drag to reorder question ${i + 1}`}
+                  title="Drag to reorder"
+                >
+                  |||
+                </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-white/40 font-mono mr-2">{i + 1}.</span>
                   <span className="font-medium truncate">{q.question_text}</span>
