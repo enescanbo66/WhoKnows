@@ -448,7 +448,22 @@ export default function AdminDashboard() {
                       Cancel
                     </button>
                     <button
-                      onClick={addQuestion}
+                      onClick={() => {
+                        if (
+                          !draft.question_text.trim() ||
+                          !draft.option_a.trim() ||
+                          !draft.option_b.trim() ||
+                          !draft.option_c.trim() ||
+                          !draft.option_d.trim()
+                        ) {
+                          return
+                        }
+                        setQuestions((prev) =>
+                          prev.map((qItem, idx) => (idx === i ? { ...draft } : qItem)),
+                        )
+                        setEditIndex(null)
+                        setDraft({ ...emptyDraft })
+                      }}
                       disabled={
                         !draft.question_text.trim() ||
                         !draft.option_a.trim() ||
