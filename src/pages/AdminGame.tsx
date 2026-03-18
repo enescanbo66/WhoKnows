@@ -19,6 +19,10 @@ export default function AdminGame() {
   const [loading, setLoading] = useState(true)
   const [distribution, setDistribution] = useState<Record<OptionKey, number> | null>(null)
 
+  const currentQuestion = game
+    ? questions[game.current_question_index] ?? undefined
+    : undefined
+
   // Fetch initial data
   useEffect(() => {
     if (!gameId) return
@@ -172,8 +176,6 @@ export default function AdminGame() {
       </div>
     )
   }
-
-  const currentQuestion = questions[game.current_question_index]
   const isLastQuestion = game.current_question_index >= questions.length - 1
   const joinUrl = `${window.location.origin}/play/${game.join_code}`
 
